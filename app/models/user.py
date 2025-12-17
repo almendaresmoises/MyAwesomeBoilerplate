@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, func
+from sqlalchemy import Column, String, Boolean, DateTime, func
 from app.db.base import Base
 
 class User(Base):

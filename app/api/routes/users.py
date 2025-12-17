@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+from sqlalchemy import select
 from typing import List
-from datetime import datetime, timezone
 
-from app.api.deps import get_db, get_current_user, require_role
+from app.api.deps import get_db, require_role
 from app.models.user import User
 from app.core.security import hash_password
 

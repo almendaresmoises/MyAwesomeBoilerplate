@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import HTTPException
 from app.repositories.user_repo import UserRepository
 from app.core.security import verify_password, hash_password
 from app.core.jwt_manager import create_access_token, create_refresh_token

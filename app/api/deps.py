@@ -3,7 +3,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
 from jose import jwt, JWTError
 from typing import AsyncGenerator
-from app.core.config import settings
 from app.models.user import User
 from sqlalchemy import select
 
