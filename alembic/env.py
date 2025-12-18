@@ -1,6 +1,5 @@
 import asyncio
 from logging.config import fileConfig
-
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -9,53 +8,50 @@ from alembic import context
 from app.core.config import settings
 from app.db.base import Base
 
+# Import models so they register with Base.metadata
+from app import models  # make sure __init__ imports everything!
+
 config = context.config
 
-# Logging
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 target_metadata = Base.metadata
 
-def run_migrations_offline() -> None:
-    """Offline migrations (no DB connection needed)"""
-    url = config.get_main_option("sqlalchemy.url")
+def run_migrations_offline():
     context.configure(
-        url=url,
+        url=config.get_main_option("sqlalchemy.url"),
         target_metadata=target_metadata,
         literal_binds=True,
+        compare_type=True,
+        compare_server_default=True,
         dialect_opts={"paramstyle": "named"},
     )
-
     with context.begin_transaction():
         context.run_migrations()
 
-# Sync migration function (passed to run_sync)
-def do_run_migrations(connection: Connection) -> None:
+def do_run_migrations(connection: Connection):
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
-        compare_type=True,  # auto detect type changes
+        compare_type=True,
         compare_server_default=True,
+        render_as_batch=True,  # important for SQLite / ALTER TABLE
     )
     with context.begin_transaction():
         context.run_migrations()
 
-async def run_migrations_online() -> None:
-    """Async migrations (required for async SQLAlchemy)"""
+async def run_migrations_online():
     connectable = create_async_engine(
-        settings.DATABASE_URL,  # must be async URL: postgresql+asyncpg://...
+        config.get_main_option("sqlalchemy.url"),
         poolclass=pool.NullPool,
-        future=True,
     )
 
     async with connectable.connect() as connection:
-        # run_sync wraps the sync function for async engine
         await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
 
-# Entry point
 if context.is_offline_mode():
     run_migrations_offline()
 else:
