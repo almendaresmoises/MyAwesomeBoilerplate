@@ -2,14 +2,15 @@ from pydantic import BaseModel, EmailStr
 from uuid import UUID
 
 class UserCreate(BaseModel):
-    tenant_id: UUID
     email: EmailStr
     password: str
+    tenant_id: UUID 
 
 class UserOut(BaseModel):
     user_id: UUID
     email: EmailStr
     role: str
+    tenant_id: UUID
 
     class Config:
-        from_attributes = True
+        orm_mode = True

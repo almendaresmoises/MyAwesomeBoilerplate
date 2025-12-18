@@ -7,10 +7,10 @@ from app.db.base import Base
 class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
-    token = Column(String, nullable=False, unique=True, index=True)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    tenant_id = Column(String, nullable=False, index=True)
+    refresh_token_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, index=True)
+    token = Column(String, nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(UUID(as_uuid=True), ForeignKey("tenants.tenant_id"), nullable=False, index=True)
     revoked = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     expires_at = Column(DateTime(timezone=True), nullable=False)

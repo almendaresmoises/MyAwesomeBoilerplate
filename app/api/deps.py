@@ -7,49 +7,37 @@ from typing import AsyncGenerator
 from app.models.user import User
 from sqlalchemy import select
 from app.models.refresh_token import RefreshToken
+from datetime import datetime, timezone
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
 
 async def get_current_user(token: str, db: AsyncSession = Depends(get_db)) -> User:
-    from app.core.security import settings
+    """
+    Validate access token and ensure user exists.
+    Access tokens are stateless, so we only verify JWT signature and expiration.
+    """
     try:
         payload = jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=["HS256"])
         user_id = payload.get("sub")
-        if user_id is None:
+        if not user_id:
             raise HTTPException(status_code=401, detail="Invalid token")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
-    # Check user exists
-    stmt = select(User).where(User.id == user_id)
+
+    # Verify user exists
+    stmt = select(User).where(User.user_id == user_id)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
-    if user is None:
+    if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    
-    # Check token revocation
-    stmt = select(RefreshToken).where(
-        RefreshToken.user_id == user_id,
-        RefreshToken.token == token,
-        RefreshToken.revoked == False
-    )
-    result = await db.execute(stmt)
-    token_obj = result.scalar_one_or_none()
-    if token_obj is None:
-        raise HTTPException(status_code=401, detail="Token revoked or invalid")
-    
-    return user
 
+    return user  # No DB check for access token revocation — handled by refresh token lifecycle
 
 def require_role(*roles):
     """
     FastAPI dependency to enforce user roles.
-    Usage:
-        @router.get("/admin")
-        async def admin_route(current_user=Depends(require_role("admin"))):
-            ...
     """
     async def role_checker(current_user: User = Depends(get_current_user)):
         if current_user.role not in roles:
