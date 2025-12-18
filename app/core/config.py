@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str
     JWT_REFRESH_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MIN: int = 15
+    ACCESS_TOKEN_EXPIRE_MIN: int = 5
     REFRESH_TOKEN_EXPIRE_MIN: int = 60 * 24 * 7  # 7 days
     
     class Config:

@@ -7,6 +7,7 @@ from app.models.refresh_token import RefreshToken
 from app.core.security import hash_password, create_access_token, create_refresh_token, verify_password
 from app.core.config import settings
 from datetime import datetime, timedelta, timezone
+from app.schemas.auth import Login
 import uuid
 
 router = APIRouter()
@@ -16,15 +17,15 @@ router = APIRouter()
 # -------------------------
 @router.post("/login")
 async def login(
-    email: str = Body(...),
-    password: str = Body(...),
+    data: Login,
     db: AsyncSession = Depends(get_db)
 ):
-    stmt = select(User).where(User.email == email)
+    stmt = select(User).where(User.email == data.email)
     result = await db.execute(stmt)
     user = result.scalar_one_or_none()
+    
 
-    if not user or not verify_password(password, user.hashed_password):
+    if not user or not verify_password(data.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     # Create tokens
