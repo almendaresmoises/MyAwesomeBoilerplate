@@ -5,11 +5,9 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import create_async_engine
 from alembic import context
 
-from app.core.config import settings
 from app.db.base import Base
 
 # Import models so they register with Base.metadata
-from app import models  # make sure __init__ imports everything!
 
 config = context.config
 

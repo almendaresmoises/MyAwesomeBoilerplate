@@ -6,8 +6,6 @@ from jose import jwt, JWTError
 from typing import AsyncGenerator
 from app.models.user import User
 from sqlalchemy import select
-from app.models.refresh_token import RefreshToken
-from datetime import datetime, timezone
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
