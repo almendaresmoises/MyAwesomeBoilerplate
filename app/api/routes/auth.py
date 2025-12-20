@@ -8,6 +8,7 @@ from app.core.security import hash_password, create_access_token, create_refresh
 from app.core.config import settings
 from datetime import datetime, timedelta, timezone
 from app.schemas.auth import Login
+from app.services.auth_service import AuthService
 import uuid
 
 router = APIRouter()
@@ -16,39 +17,20 @@ router = APIRouter()
 # LOGIN
 # -------------------------
 @router.post("/login")
-async def login(
-    data: Login,
-    db: AsyncSession = Depends(get_db)
-):
-    stmt = select(User).where(User.email == data.email)
-    result = await db.execute(stmt)
-    user = result.scalar_one_or_none()
-    
-
-    if not user or not verify_password(data.password, user.hashed_password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-
-    # Create tokens
-    access_token = create_access_token(str(user.user_id))
-    refresh_token_str = create_refresh_token(str(user.user_id))
-
-
-    # Save only refresh token in DB
-    refresh_token_obj = RefreshToken(
-        token=refresh_token_str,
-        user_id=user.user_id,
-        tenant_id=user.tenant_id,
-        expires_at=datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_MIN)
-    )
-    db.add(refresh_token_obj)
-    await db.commit()
-    await db.refresh(refresh_token_obj)
-
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token_str,
-        "token_type": "bearer"
-    }
+async def login(payload: Login, db: AsyncSession = Depends(get_db)):
+    auth_service = AuthService(db)
+    try:
+        access_token, refresh_token, user = await auth_service.login(payload.email, payload.password)
+        return {
+            "msg": "Login successful",
+            "user_id": str(user.user_id),
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }
+    except HTTPException as e:
+        raise e
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
 
 
 # -------------------------
