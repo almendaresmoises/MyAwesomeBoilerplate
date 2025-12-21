@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Body, status
+from fastapi import APIRouter, Depends, HTTPException, Body, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.api.deps import get_db, get_current_user, require_role
@@ -13,29 +13,35 @@ import uuid
 
 router = APIRouter()
 
-# -------------------------
-# LOGIN
-# -------------------------
 @router.post("/login")
-async def login(payload: Login, db: AsyncSession = Depends(get_db)):
-    auth_service = AuthService(db)
-    try:
-        access_token, refresh_token, user = await auth_service.login(payload.email, payload.password)
-        return {
-            "msg": "Login successful",
+async def login(payload: Login, response: Response, db: AsyncSession = Depends(get_db)):
+    access_token, refresh_token, user = await AuthService.login(
+        db=db,
+        email=payload.email,
+        password=payload.password
+    )
+
+    # Store refresh token in a HttpOnly cookie
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,              # only HTTPS
+        samesite="none",          # needed for cross-site SPA
+        max_age=settings.REFRESH_TOKEN_EXPIRE_MIN * 60, #set later
+    )
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": {
             "user_id": str(user.user_id),
-            "access_token": access_token,
-            "refresh_token": refresh_token
+            "email": user.email,
+            "role": user.role,
         }
-    except HTTPException as e:
-        raise e
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
+    }
 
 
-# -------------------------
-# REGISTER
-# -------------------------
 @router.post("/register")
 async def register(
     email: str = Body(...),
@@ -137,11 +143,13 @@ async def logout(refresh_token: str = Body(...), db: AsyncSession = Depends(get_
 # -------------------------
 @router.get("/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
+
     return {
         "id": current_user.user_id,
         "email": current_user.email,
         "role": current_user.role,
-        "tenant_id": current_user.tenant_id
+        "tenant_id": current_user.tenant_id,
+        # "refresh_token": current_user.refresh_tokens
     }
 
 

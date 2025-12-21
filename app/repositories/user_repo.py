@@ -6,9 +6,10 @@ class UserRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_email(self, email: str):
+    @staticmethod
+    async def get_by_email(db: AsyncSession, email: str):
         stmt = select(User).where(User.email == email)
-        result = await self.db.execute(stmt)
+        result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def create(self, email: str, hashed_password: str):
