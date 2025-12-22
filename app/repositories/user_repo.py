@@ -12,11 +12,12 @@ class UserRepository:
         result = await db.execute(stmt)
         return result.scalar_one_or_none()
 
-    async def create(self, email: str, hashed_password: str):
+    @staticmethod    
+    async def create(db: AsyncSession, email: str, hashed_password: str):
         user = User(email=email, hashed_password=hashed_password)
-        self.db.add(user)
-        await self.db.commit()
-        await self.db.refresh(user)
+        db.add(user)
+        await db.commit()
+        await db.refresh(user)
         return user
 
     async def get_by_id(self, user_id: int):

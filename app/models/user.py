@@ -17,3 +17,4 @@ class User(Base):
 
     tenant = relationship("Tenant", back_populates="users")
     refresh_tokens = relationship("RefreshToken", cascade="all, delete-orphan", back_populates="user")
+    security_tokens = relationship("SecurityToken", cascade="all, delete-orphan", back_populates="user")
